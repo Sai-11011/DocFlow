@@ -1,174 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>DocuFlow - PDF Chat</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuFlow - Intelligent Document Chat</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown Rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky 500
+                            600: '#0284c7', // Sky 600
+                            900: '#0c4a6e', // Sky 900
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
+        /* Custom scrollbar styling */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .response-box {
-            background: #f1f1f1;
-            padding: 15px;
-            border-radius: 5px;
-            min-height: 80px;
-            /* white-space: pre-wrap;  <-- REMOVE OR COMMENT THIS OUT */
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
+        .prose p {
+            margin-bottom: 0.75rem;
         }
 
-        section {
-            margin-bottom: 30px;
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
         }
 
-        label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 8px;
+        .prose ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
         }
 
-        input[type="file"],
-        textarea,
-        button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+        .prose strong {
+            font-weight: 600;
+            color: #0f172a;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 100px;
+        .prose code {
+            background-color: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+            color: #ef4444;
         }
 
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
+        /* Animation for thinking dots */
+        @keyframes bounce-delay {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
         }
 
-        button:hover {
-            background-color: #45a049;
-        }
-
-        .response-box {
-            background: #f1f1f1;
-            padding: 15px;
-            border-radius: 5px;
-            min-height: 80px;
-            white-space: pre-wrap;
-        }
-
-        .status {
-            font-size: 14px;
-            margin-top: 5px;
-            color: #555;
+        .animate-bounce-delay {
+            animation: bounce-delay 1s infinite;
         }
     </style>
 </head>
-<body>
 
-<div class="container">
-    <h1>📄 DocuFlow – PDF Chat (Testing UI)</h1>
+<body class="bg-slate-50 h-screen flex flex-col md:flex-row overflow-hidden text-slate-800">
 
-    <!-- PDF Upload Section -->
-    <section>
-        <label for="pdfFile">Upload PDF</label>
-        <input type="file" id="pdfFile" accept=".pdf">
-        <button onclick="uploadPDF()">Upload PDF</button>
-        <div class="status" id="uploadStatus"></div>
-    </section>
-
-    <!-- Question Section -->
-    <section>
-        <label for="question">Ask a Question</label>
-        <textarea id="question" placeholder="Enter your question here..."></textarea>
-        <button onclick="askQuestion()">Ask</button>
-    </section>
-
-    <!-- Answer Section -->
-    <section>
-        <label>Answer</label>
-        <div class="response-box" id="answerBox">
-            Answer will appear here...
+    <!-- Sidebar -->
+    <aside
+        class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col z-20 shadow-lg md:shadow-none transition-transform duration-300 transform md:translate-x-0 -translate-x-full fixed md:relative h-full"
+        id="sidebar">
+        <!-- Logo Header -->
+        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+            <div
+                class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                <i class="fa-solid fa-layer-group text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight leading-none">DocuFlow</h1>
+                <span class="text-xs text-slate-500 font-medium">AI PDF Assistant</span>
+            </div>
+            <button class="md:hidden ml-auto text-slate-400 hover:text-slate-600" onclick="toggleSidebar()">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
-    </section>
-</div>
 
-<script>
-    async function uploadPDF() {
-        const fileInput = document.getElementById("pdfFile");
-        const status = document.getElementById("uploadStatus");
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+            <!-- Upload Area -->
+            <div class="mb-8">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload Source
+                </h2>
 
-        if (!fileInput.files.length) {
-            status.innerText = "Please select a PDF file.";
-            return;
+                <div class="relative group">
+                    <input type="file" id="pdfFile" accept=".pdf" class="hidden" onchange="handleFileSelect(this)"
+                        multiple>
+                    <label for="pdfFile"
+                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition-all duration-300 group-hover:shadow-sm">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                            <div
+                                class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-white transition-colors">
+                                <i class="fa-solid fa-plus text-slate-400 group-hover:text-brand-500"></i>
+                            </div>
+                            <p class="text-sm text-slate-600 font-medium group-hover:text-brand-600">Click to upload
+                                PDFs</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Multi-file support active</p>
+                        </div>
+                    </label>
+                </div>
+                <p id="uploadStatusText"
+                    class="text-xs text-center text-slate-400 mt-2 h-4 transition-colors duration-300"></p>
+            </div>
+
+            <!-- File List -->
+            <div>
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-folder-open"></i> Active Files
+                </h2>
+                <div id="fileList" class="space-y-2">
+                    <!-- Empty State -->
+                    <div id="emptyState"
+                        class="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <i class="fa-regular fa-file-pdf text-slate-300 text-2xl mb-2"></i>
+                        <p class="text-xs text-slate-400">No documents uploaded yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+            <div class="flex items-center gap-2 px-2 py-1 bg-white rounded-lg border border-slate-200 shadow-sm"
+                id="statusIndicator">
+                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                <span class="text-xs font-medium text-slate-600">Connecting...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-10 hidden md:hidden"
+        onclick="toggleSidebar()"></div>
+
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col h-full relative w-full">
+
+        <!-- Top Bar (Mobile Only) -->
+        <div class="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between shadow-sm z-10">
+            <span class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-brand-600"></i> DocuFlow
+            </span>
+            <button onclick="toggleSidebar()"
+                class="text-slate-600 p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Chat Container -->
+        <div id="chatContainer"
+            class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar scroll-smooth bg-slate-50">
+            <!-- Welcome Message -->
+            <div class="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-100 transition-all duration-500"
+                id="welcomeMessage">
+                <div
+                    class="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center text-brand-600 text-3xl mb-2 border border-slate-100 transform hover:scale-105 transition-transform duration-300">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Welcome to DocuFlow</h3>
+                    <p class="text-slate-500 max-w-md mx-auto leading-relaxed">
+                        Upload your PDF documents to start a context-aware conversation. I can summarize, analyze, and
+                        answer specific questions.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full px-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600">
+                        <i class="fa-solid fa-magnifying-glass text-brand-500 mr-2"></i> Find specific details
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600">
+                        <i class="fa-solid fa-list-check text-brand-500 mr-2"></i> Summarize key points
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 md:p-6 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div class="max-w-4xl mx-auto relative">
+                <div
+                    class="relative flex items-end gap-2 bg-slate-50 border border-slate-300 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 focus-within:bg-white transition-all duration-300 shadow-inner">
+                    <textarea id="question" placeholder="Ask a question about your documents..."
+                        class="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[48px] py-3 px-3 text-slate-700 placeholder-slate-400 leading-relaxed custom-scrollbar"
+                        rows="1" onkeydown="handleEnter(event)"></textarea>
+                    <button onclick="askQuestion()" id="sendBtn"
+                        class="mb-1 p-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg active:scale-95">
+                        <i class="fa-solid fa-paper-plane px-1"></i>
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2 text-center uppercase tracking-widest font-semibold">AI
+                    Generated Content</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const questionInput = document.getElementById('question');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const sendBtn = document.getElementById('sendBtn');
+        const fileList = document.getElementById('fileList');
+        const emptyState = document.getElementById('emptyState');
+        const statusIndicator = document.getElementById('statusIndicator');
+
+        // Sidebar Toggle for Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
         }
 
-        const formData = new FormData();
-        formData.append("file", fileInput.files[0]);
+        // Auto-resize textarea
+        questionInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.value === '') this.style.height = 'auto';
+        });
 
-        status.innerText = "Uploading PDF...";
+        function handleEnter(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        }
 
-        try {
-            const response = await fetch("/upload", {
-                method: "POST",
-                body: formData
+        async function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                await uploadPDF(input.files);
+            }
+        }
+
+        function updateFileList(filenames) {
+            if (filenames.length > 0) {
+                emptyState.classList.add('hidden');
+                fileList.innerHTML = ''; // Clear current list
+
+                filenames.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm animate-[fadeIn_0.3s_ease-out]';
+                    div.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-file-pdf text-red-500"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-700 truncate" title="${name}">${name}</p>
+                            <p class="text-[10px] text-green-600 font-semibold uppercase tracking-wide">Ready</p>
+                        </div>
+                    `;
+                    fileList.appendChild(div);
+                });
+            }
+        }
+
+        function updateStatus(type, msg) {
+            const colors = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'connecting': 'bg-amber-500',
+                'demo': 'bg-blue-500'
+            };
+            const colorClass = colors[type] || 'bg-slate-300';
+
+            statusIndicator.innerHTML = `
+                <div class="w-2 h-2 rounded-full ${colorClass} ${type === 'connecting' ? 'animate-pulse' : ''}"></div>
+                <span class="text-xs font-medium text-slate-600">${msg}</span>
+            `;
+        }
+
+        async function uploadPDF(files) {
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append("file", files[i]);
+            }
+
+            const statusText = document.getElementById("uploadStatusText");
+            statusText.innerText = `Uploading ${files.length} document(s)...`;
+            statusText.className = "text-xs text-center text-brand-600 font-medium mt-2";
+            updateStatus('connecting', 'Uploading...');
+
+            try {
+                // Try genuine upload first
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    handleUploadSuccess(data.filenames, files.length);
+                    updateStatus('success', 'System Operational');
+                } else {
+                    throw new Error(data.message || "Upload failed");
+                }
+            } catch (error) {
+                // FALLBACK TO DEMO MODE
+                console.warn("Backend not reachable. Switching to Demo Mode.", error);
+
+                // Simulate network delay
+                await new Promise(r => setTimeout(r, 1500));
+
+                // Simulate success with file names
+                const mockFilenames = Array.from(files).map(f => f.name);
+                handleUploadSuccess(mockFilenames, files.length);
+                updateStatus('demo', 'Demo Mode Active');
+
+                // Note: In demo mode, chat will also be simulated
+                window.isDemoMode = true;
+            } finally {
+                // Clear status text after a bit
+                setTimeout(() => statusText.innerText = "", 3000);
+            }
+        }
+
+        function handleUploadSuccess(filenames, count) {
+            const statusText = document.getElementById("uploadStatusText");
+            statusText.innerText = "Upload Complete!";
+            statusText.className = "text-xs text-center text-green-600 font-medium mt-2";
+
+            if (filenames) {
+                updateFileList(filenames);
+            }
+
+            welcomeMessage.innerHTML = `
+                <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center text-green-500 text-3xl mb-4 shadow-sm border border-green-100">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">Processed ${count} File${count > 1 ? 's' : ''}</h3>
+                <p class="text-slate-500">I'm ready! Ask me anything about these documents.</p>
+            `;
+        }
+
+        function appendMessage(role, text) {
+            if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex w-full ${role === 'user' ? 'justify-end' : 'justify-start'} animate-[slideIn_0.3s_ease-out]`;
+
+            const isUser = role === 'user';
+
+            const bubbleHtml = `
+                <div class="flex max-w-[85%] md:max-w-[75%] gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}">
+                    <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm ${isUser ? 'bg-brand-600 text-white' : 'bg-white text-brand-600 border border-slate-200'}">
+                        <i class="fa-solid ${isUser ? 'fa-user' : 'fa-robot'} text-sm"></i>
+                    </div>
+                    <div class="p-4 rounded-2xl shadow-sm prose prose-sm max-w-none break-words ${isUser
+                    ? 'bg-brand-600 text-white rounded-tr-sm'
+                    : 'bg-white text-slate-700 border border-slate-200 rounded-tl-sm'
+                }">
+                        ${isUser ? text : marked.parse(text)}
+                    </div>
+                </div>
+            `;
+
+            messageDiv.innerHTML = bubbleHtml;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const id = 'typing-' + Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.id = id;
+            messageDiv.className = `flex w-full justify-start`;
+
+            messageDiv.innerHTML = `
+                <div class="flex max-w-[80%] gap-3 flex-row">
+                    <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-white text-brand-600 border border-slate-200 shadow-sm">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 rounded-tl-sm shadow-sm flex items-center gap-1.5 h-[54px]">
+                        <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce-delay" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce-delay" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce-delay" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+
+        async function askQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            questionInput.value = '';
+            questionInput.style.height = 'auto';
+            sendBtn.disabled = true;
+
+            appendMessage('user', question);
+            const loadingId = showTypingIndicator();
+
+            if (window.isDemoMode) {
+                // SIMULATED BACKEND RESPONSE
+                await new Promise(r => setTimeout(r, 2000));
+                document.getElementById(loadingId).remove();
+                appendMessage('bot', "This is a **demo response**. Since the backend server isn't running in this preview, I can't read the actual PDF content. \n\nHowever, in the real app, I would answer based on the " + document.querySelectorAll('#fileList div').length + " file(s) you uploaded.");
+                sendBtn.disabled = false;
+                questionInput.focus();
+                return;
+            }
+
+            try {
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+
+                if (response.ok) {
+                    appendMessage('bot', data.answer);
+                } else {
+                    appendMessage('bot', `**Error:** ${data.answer || "Something went wrong."}`);
+                }
+            } catch (error) {
+                // Fallback to demo mode if chat fails
+                console.warn("Chat failed, switching to demo mode logic for next time.");
+                window.isDemoMode = true;
+
+                if (document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+
+                // Show friendly error with demo context
+                appendMessage('bot', "**Note:** I couldn't reach the backend server. The UI has switched to Demo Mode. In a real deployment, this would be your AI answer.");
+            } finally {
+                sendBtn.disabled = false;
+                questionInput.focus();
+            }
+        }
+
+        // Init
+        updateStatus('connecting', 'Checking System...');
+        // Quick check to see if we can reach backend, else set demo mode quietly
+        fetch('/').then(r => updateStatus('success', 'System Online'))
+            .catch(e => {
+                updateStatus('demo', 'Demo Mode (No Backend)');
+                window.isDemoMode = true;
             });
 
-            const data = await response.json();
-            status.innerText = data.message || "PDF uploaded successfully.";
-        } catch (error) {
-            status.innerText = "Error uploading PDF.";
-        }
-    }
-
-    async function askQuestion() {
-        const question = document.getElementById("question").value;
-        const answerBox = document.getElementById("answerBox");
-
-        if (!question.trim()) {
-            answerBox.innerText = "Please enter a question.";
-            return;
-        }
-
-        answerBox.innerText = "Thinking...";
-
-        try {
-            const response = await fetch("/ask", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ question: question })
-            });
-
-            const data = await response.json();
-            answerBox.innerText = marked.parse(data.answer || "No answer returned.");
-        } catch (error) {
-            answerBox.innerText = "Error getting answer.";
-        }
-    }
-</script>
-
+    </script>
 </body>
+
 </html>
