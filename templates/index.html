@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DocuFlow - PDF Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .response-box {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 80px;
+            /* white-space: pre-wrap;  <-- REMOVE OR COMMENT THIS OUT */
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="file"],
+        textarea,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .response-box {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 80px;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            font-size: 14px;
+            margin-top: 5px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📄 DocuFlow – PDF Chat (Testing UI)</h1>
+
+    <!-- PDF Upload Section -->
+    <section>
+        <label for="pdfFile">Upload PDF</label>
+        <input type="file" id="pdfFile" accept=".pdf">
+        <button onclick="uploadPDF()">Upload PDF</button>
+        <div class="status" id="uploadStatus"></div>
+    </section>
+
+    <!-- Question Section -->
+    <section>
+        <label for="question">Ask a Question</label>
+        <textarea id="question" placeholder="Enter your question here..."></textarea>
+        <button onclick="askQuestion()">Ask</button>
+    </section>
+
+    <!-- Answer Section -->
+    <section>
+        <label>Answer</label>
+        <div class="response-box" id="answerBox">
+            Answer will appear here...
+        </div>
+    </section>
+</div>
+
+<script>
+    async function uploadPDF() {
+        const fileInput = document.getElementById("pdfFile");
+        const status = document.getElementById("uploadStatus");
+
+        if (!fileInput.files.length) {
+            status.innerText = "Please select a PDF file.";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        status.innerText = "Uploading PDF...";
+
+        try {
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+            status.innerText = data.message || "PDF uploaded successfully.";
+        } catch (error) {
+            status.innerText = "Error uploading PDF.";
+        }
+    }
+
+    async function askQuestion() {
+        const question = document.getElementById("question").value;
+        const answerBox = document.getElementById("answerBox");
+
+        if (!question.trim()) {
+            answerBox.innerText = "Please enter a question.";
+            return;
+        }
+
+        answerBox.innerText = "Thinking...";
+
+        try {
+            const response = await fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question: question })
+            });
+
+            const data = await response.json();
+            answerBox.innerText = marked.parse(data.answer || "No answer returned.");
+        } catch (error) {
+            answerBox.innerText = "Error getting answer.";
+        }
+    }
+</script>
+
+</body>
+</html>
