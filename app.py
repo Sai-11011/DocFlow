@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 pdf_content = ""
 
-UPLOAD_FOLDER = "uploaded_resumes" 
+UPLOAD_FOLDER = "uploaded_pdfs" 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -22,8 +22,7 @@ def extract_text(file_stream):
         if page_text:
             text += page_text
         else:
-            print(f"Warning: Page {i} returned no text.")
-    print(f"Total extracted characters: {len(text)}") # DEBUG
+            print(f"Warning: Page {i} returned no text.") #DEBUG
     return text
 
 @app.route('/')
@@ -52,7 +51,6 @@ def upload_file():
 @app.route('/ask', methods=['POST'])
 def ask_question():
     global pdf_content
-    print(pdf_content)  # DEBUG
     question = request.json.get('question', '')
 
     if not pdf_content:
